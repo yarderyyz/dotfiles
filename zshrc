@@ -93,5 +93,10 @@ fi
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+cpl() {
+    # Get the last command and copy it to the clipboard
+    fc -ln -1 | tr -d '\n' | pbcopy
+}
+
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
