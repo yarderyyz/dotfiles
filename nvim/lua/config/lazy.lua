@@ -12,19 +12,6 @@ require("lazy").setup({
     -- add LazyVim and import its plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins" },
     -- import any extras modules here
-    { "nvim-tree/nvim-web-devicons", lazy = true },
-    {
-      "nvim-lualine/lualine.nvim",
-      dependencies = { "nvim-tree/nvim-web-devicons" },
-    },
-    --  Not sure I'll keep these yet
-    {
-      "L3MON4D3/LuaSnip",
-      event = "VeryLazy",
-      config = function()
-        require("luasnip.loaders.from_lua").load({ paths = "./snippets" })
-      end,
-    },
     -- { import = "lazyvim.plugins.extras.lang.typescript" },
     -- { import = "lazyvim.plugins.extras.lang.json" },
     -- { import = "lazyvim.plugins.extras.ui.mini-animate" },
