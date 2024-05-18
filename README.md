@@ -12,3 +12,5 @@ ls -s <path to dotfiles>/karabiner .config/karabiner
 - https://github.com/romkatv/powerlevel10k
 - https://www.lazyvim.org
 - https://karabiner-elements.pqrs.org/
+- brew install zplug
+
