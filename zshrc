@@ -5,6 +5,10 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+export LIMBIC_DIR="$HOME/Projects/limbicmedia"
+export LIMBIC_ACCESS_KEY_ID=$(security find-generic-password -a "leegauthier" -s "LimbicAccessKeyID" -w)
+export LIMBIC_SECRET_ACCESS_KEY=$(security find-generic-password -a "leegauthier" -s "LimbicSecretAccessKey" -w)
+
 export ZSH="$HOME/.oh-my-zsh"
 
 ZSH_THEME="powerlevel10k/powerlevel10k"

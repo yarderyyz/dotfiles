@@ -6,15 +6,17 @@ return {
     "hrsh7th/cmp-nvim-lsp",
     "hrsh7th/cmp-buffer",
     "hrsh7th/cmp-path",
-    -- "L3MON4D3/LuaSnip",
-    -- "saadparwaiz1/cmp_luasnip",
-    {
-      "zbirenbaum/copilot-cmp",
-      config = function()
-        require("copilot_cmp").setup()
-      end,
-    },
   },
+  -- Not all LSP servers add brackets when completing a function.
+  -- To better deal with this, LazyVim adds a custom option to cmp,
+  -- that you can configure. For example:
+  --
+  -- ```lua
+  -- opts = {
+  --   auto_brackets = { "python" }
+  -- }
+  -- ```
+
   opts = function()
     vim.api.nvim_set_hl(0, "CmpGhostText", { link = "Comment", default = true })
     local cmp = require("cmp")
@@ -23,35 +25,30 @@ return {
       auto_brackets = {}, -- configure any filetype to auto add brackets
       completion = {
         completeopt = "menu,menuone,noinsert",
+        autocomplete = false,
       },
       mapping = cmp.mapping.preset.insert({
         ["<C-j>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
         ["<C-k>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
-        ["<C-b>"] = cmp.mapping.scroll_docs(-4),
-        ["<C-f>"] = cmp.mapping.scroll_docs(4),
-        ["<C-CR>"] = cmp.mapping.complete(),
-        ["<C-e>"] = cmp.mapping.abort(),
-        ["<C-t>"] = function(fallback)
-          if cmp.core.view:visible() or vim.fn.pumvisible() == 1 then
-            LazyVim.create_undo()
-            if cmp.confirm({ select = true }) then
-              return
-            end
+        ["<C-n>"] = cmp.mapping.scroll_docs(-4),
+        ["<C-p>"] = cmp.mapping.scroll_docs(4),
+        ["<C-t>"] = cmp.mapping(function()
+          if cmp.visible() then
+            cmp.confirm({ select = true })
+          else
+            cmp.complete()
           end
-          return fallback()
-        end,
-        ["<S-CR>"] = cmp.mapping.confirm({
-          behavior = cmp.ConfirmBehavior.Replace,
-          select = true,
-        }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+        end),
+        ["<C-e>"] = cmp.mapping.abort(),
+        ["<S-CR>"] = LazyVim.cmp.confirm({ behavior = cmp.ConfirmBehavior.Replace }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
         ["<C-CR>"] = function(fallback)
           cmp.abort()
           fallback()
         end,
       }),
       sources = cmp.config.sources({
-        { name = "copilot" },
         { name = "nvim_lsp" },
+        { name = "copilot" },
         { name = "path" },
       }, {
         { name = "buffer" },
@@ -78,23 +75,23 @@ return {
     for _, source in ipairs(opts.sources) do
       source.group_index = source.group_index or 1
     end
+
+    local parse = require("cmp.utils.snippet").parse
+    require("cmp.utils.snippet").parse = function(input)
+      local ok, ret = pcall(parse, input)
+      if ok then
+        return ret
+      end
+      return LazyVim.cmp.snippet_preview(input)
+    end
+
     local cmp = require("cmp")
-    local Kind = cmp.lsp.CompletionItemKind
     cmp.setup(opts)
-    cmp.event:on("confirm_done", function(event)
-      if not vim.tbl_contains(opts.auto_brackets or {}, vim.bo.filetype) then
-        return
-      end
-      local entry = event.entry
-      local item = entry:get_completion_item()
-      if vim.tbl_contains({ Kind.Function, Kind.Method }, item.kind) and item.insertTextFormat ~= 2 then
-        local cursor = vim.api.nvim_win_get_cursor(0)
-        local prev_char = vim.api.nvim_buf_get_text(0, cursor[1] - 1, cursor[2], cursor[1] - 1, cursor[2] + 1, {})[1]
-        if prev_char ~= "(" and prev_char ~= ")" then
-          local keys = vim.api.nvim_replace_termcodes("()<left>", false, false, true)
-          vim.api.nvim_feedkeys(keys, "i", true)
-        end
-      end
+    cmp.event:on("menu_opened", function(event)
+      LazyVim.cmp.add_missing_snippet_docs(event.window)
     end)
+
+    local cmp_autopairs = require("nvim-autopairs.completion.cmp")
+    cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
   end,
 }

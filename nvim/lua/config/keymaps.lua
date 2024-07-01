@@ -3,3 +3,7 @@
 -- Add any additional keymaps here
 vim.api.nvim_del_keymap("n", "<A-j>")
 vim.api.nvim_del_keymap("n", "<A-k>")
+vim.api.nvim_del_keymap("i", "<A-j>")
+vim.api.nvim_del_keymap("i", "<A-k>")
+vim.api.nvim_del_keymap("v", "<A-j>")
+vim.api.nvim_del_keymap("v", "<A-k>")

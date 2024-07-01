@@ -40,6 +40,7 @@ return {
       "markdown",
       "markdown_inline",
       "python",
+      "sql",
       "query",
       "regex",
       "toml",
