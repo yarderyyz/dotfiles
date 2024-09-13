@@ -1,39 +1,10 @@
---return {
---  "neovim/nvim-lspconfig",
---  dependencies = {
---    "williamboman/mason.nvim",
---    "williamboman/mason-lspconfig.nvim",
---  },
---  config = function()
---    local capabilities = vim.lsp.protocol.make_client_capabilities()
---    capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
---
---    require("mason").setup()
---    local mason_lspconfig = require("mason-lspconfig")
---    mason_lspconfig.setup({
---      ensure_installed = { "pyright" },
---      ensure_installed = { "black" },
---      ensure_installed = { "biome" },
---      ensure_installed = { "tsserver" },
---    })
---    require("lspconfig").pyright.setup({
---      capabilities = capabilities,
---    })
---    require("lspconfig").biome.setup({
---      capabilities = capabilities,
---    })
---    require("lspconfig").tsserver.setup({
---      capabilities = capabilities,
---    })
---  end,
---}
-
 return {
   "neovim/nvim-lspconfig",
   event = "LazyFile",
   dependencies = {
     { "folke/neoconf.nvim", cmd = "Neoconf", config = false, dependencies = { "nvim-lspconfig" } },
     { "folke/neodev.nvim", opts = {} },
+    "jose-elias-alvarez/typescript.nvim",
     "mason.nvim",
     "williamboman/mason-lspconfig.nvim",
   },
@@ -41,6 +12,7 @@ return {
   opts = {
     -- options for vim.diagnostic.config()
     ---@type vim.diagnostic.Opts
+
     diagnostics = {
       underline = true,
       update_in_insert = false,
@@ -83,6 +55,7 @@ return {
     -- options for vim.lsp.buf.format
     -- `bufnr` and `filter` is handled by the LazyVim formatter,
     -- but can be also overridden when specified
+    autoformat = false,
     format = {
       formatting_options = nil,
       timeout_ms = nil,
@@ -90,6 +63,70 @@ return {
     -- LSP Server Settings
     ---@type lspconfig.options
     servers = {
+      tsserver = {
+        root_dir = require("lspconfig").util.root_pattern("package.json"),
+        single_file_support = false,
+        -- refer https://github.com/jose-elias-alvarez/null-ls.nvim/discussions/274#discussioncomment-1515526
+        on_attach = function(client)
+          client.resolved_capabilities.document_formatting = false -- disable formatting in tsserver in favor of null-ls
+        end,
+        handlers = {
+          -- format error code with better error message
+          ["textDocument/publishDiagnostics"] = function(_, result, ctx, config)
+            if result.diagnostics == nil then
+              return
+            end
+
+            local idx = 1
+
+            while idx <= #result.diagnostics do
+              local entry = result.diagnostics[idx]
+              local formatter = require("format-ts-errors")[entry.code]
+              entry.message = formatter and formatter(entry.message) or entry.message
+              if entry.code == 80001 then
+                table.remove(result.diagnostics, idx)
+              else
+                idx = idx + 1
+              end
+            end
+            vim.lsp.diagnostic.on_publish_diagnostics(_, result, ctx, config)
+          end,
+        },
+        -- add keymap
+        keys = {
+          { "<leader>co", "<cmd>TypescriptOrganizeImports<CR>", desc = "Organize Imports" },
+          { "<leader>cR", "<cmd>TypescriptRenameFile<CR>", desc = "Rename File" },
+        },
+        -- inlay hints
+        settings = {
+          typescript = {
+            inlayHints = {
+              -- You can set this to 'all' or 'literals' to enable more hints
+              includeInlayParameterNameHints = "literals", -- 'none' | 'literals' | 'all'
+              includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+              includeInlayFunctionParameterTypeHints = false,
+              includeInlayVariableTypeHints = false,
+              includeInlayVariableTypeHintsWhenTypeMatchesName = false,
+              includeInlayPropertyDeclarationTypeHints = false,
+              includeInlayFunctionLikeReturnTypeHints = true,
+              includeInlayEnumMemberValueHints = true,
+            },
+          },
+          javascript = {
+            inlayHints = {
+              -- You can set this to 'all' or 'literals' to enable more hints
+              includeInlayParameterNameHints = "literals", -- 'none' | 'literals' | 'all'
+              includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+              includeInlayVariableTypeHints = false,
+              includeInlayFunctionParameterTypeHints = false,
+              includeInlayVariableTypeHintsWhenTypeMatchesName = false,
+              includeInlayPropertyDeclarationTypeHints = false,
+              includeInlayFunctionLikeReturnTypeHints = true,
+              includeInlayEnumMemberValueHints = true,
+            },
+          },
+        },
+      },
       lua_ls = {
         -- mason = false, -- set to false if you don't want this server to be installed with mason
         -- Use this to add any additional keymaps
@@ -126,13 +163,10 @@ return {
     -- return true if you don't want this server to be setup with lspconfig
     ---@type table<string, fun(server:string, opts:_.lspconfig.options):boolean?>
     setup = {
-      -- example to setup with typescript.nvim
-      -- tsserver = function(_, opts)
-      --   require("typescript").setup({ server = opts })
-      --   return true
-      -- end,
-      -- Specify * to use this function as a fallback for any server
-      -- ["*"] = function(server, opts) end,
+      tsserver = function(_, opts)
+        require("typescript").setup({ server = opts })
+        return true
+      end,
     },
   },
   ---@param opts PluginLspOpts
@@ -142,7 +176,7 @@ return {
     end
 
     -- setup autoformat
-    LazyVim.format.register(LazyVim.lsp.formatter())
+    -- LazyVim.forautoformat = truemat.register(LazyVim.lsp.formatter())
 
     -- setup keymaps
     LazyVim.lsp.on_attach(function(client, buffer)

@@ -9,6 +9,7 @@ return {
       javascript = { "biome" },
       typescript = { "biome" },
       typescriptreact = { "biome" },
+      rust = { "rustfmt", lsp_format = "fallback" },
     },
   },
 }
