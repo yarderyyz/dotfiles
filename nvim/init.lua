@@ -13,6 +13,9 @@ vim.g.shiftwidth = 2 -- Number of spaces for each indentation
 vim.g.tabstop = 2 -- Number of spaces that a tab counts for
 vim.g.softtabstop = 2 -- Number of spaces that <Tab> inserts
 
+-- set true color
+vim.o.termguicolors = true
+
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = "a"
 
@@ -128,6 +131,44 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
-require("lazy").setup("plugins")
+-- set custom filetypes here
+vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+  pattern = "*.scm",
+  command = "setfiletype scheme",
+})
 
-vim.cmd.colorscheme("catppuccin")
+require("lazy").setup({
+  spec = {
+    -- import any extras modules here
+    -- import/override with your plugins
+    { import = "plugins" },
+    {
+      "mnacamura/vim-r7rs-syntax",
+      -- Optional: Configure lazy-loading or additional settings here
+    },
+  },
+  defaults = {
+    lazy = false,
+    -- It's recommended to leave version=false for now, since a lot the plugin that support versioning,
+    -- have outdated releases, which may break your Neovim install.
+    version = false, -- always use the latest git commit
+    -- version = "*", -- try installing the latest stable version for plugins that support semver
+  },
+  install = { colorscheme = { "tokyonight", "habamax", "catppuccin" } },
+  checker = { enabled = true }, -- automatically check for plugin updates
+  performance = {
+    rtp = {
+      -- disable some rtp plugins
+      disabled_plugins = {
+        "gzip",
+        -- "matchit",
+        -- "matchparen",
+        -- "netrwPlugin",
+        "tarPlugin",
+        "tohtml",
+        "tutor",
+        "zipPlugin",
+      },
+    },
+  },
+})

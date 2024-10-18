@@ -174,8 +174,11 @@ return {
       },
 
       vtsls = {
+        -- enabled = false,
         -- explicitly add default filetypes, so that we can extend
         -- them in related extras
+
+        root_dir = require("lspconfig").util.root_pattern("package.json"),
         filetypes = {
           "javascript",
           "javascriptreact",
@@ -184,6 +187,11 @@ return {
           "typescriptreact",
           "typescript.tsx",
         },
+        cmd = {
+          "bun",
+          "/Users/leegauthier/.local/share/nvim/mason/packages/vtsls/node_modules/.bin/vtsls",
+          "--stdio",
+        }, -- Allocate 4GB memory for tsserver
         settings = {
           complete_function_calls = true,
           vtsls = {
