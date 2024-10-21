@@ -1,8 +1,6 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+# themes!
+if [ "$TERM_PROGRAM" != "Apple_Terminal" ]; then
+  eval "$(oh-my-posh init zsh --config 'https://github.com/JanDeDobbeleer/oh-my-posh/blob/main/themes/catppuccin_mocha.omp.json')"
 fi
 
 export LIMBIC_DIR="$HOME/Projects/limbicmedia"
@@ -10,9 +8,11 @@ export LIMBIC_ACCESS_KEY_ID=$(security find-generic-password -a "leegauthier" -s
 export LIMBIC_SECRET_ACCESS_KEY=$(security find-generic-password -a "leegauthier" -s "LimbicSecretAccessKey" -w)
 
 export ZSH="$HOME/.oh-my-zsh"
+PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"
 
-ZSH_THEME="powerlevel10k/powerlevel10k"
+# ZSH_THEME="frisk"
 export BAT_THEME="Catppuccin Macchiato"
+export LS_COLORS="$(vivid generate catppuccin-mocha)"
 
 # Uncomment the following line to use case-sensitive completion.
 # CASE_SENSITIVE="true"
@@ -96,7 +96,7 @@ fi
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 alias cat='bat'
-alias ls="eza --color=always --long --git --no-filesize --icons=always --no-time --no-user --no-permissions"
+alias ls="eza --color=always --git --no-filesize --icons=always --no-time --no-user --no-permissions"
 
 cpl() {
     # Get the last command and copy it to the clipboard
@@ -131,6 +131,3 @@ _fzf_compgen_dir() {
 eval "$(zoxide init zsh)"
 
 alias cd="z"
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
