@@ -200,14 +200,6 @@ config.keys = {
     mods = "LEADER",
     action = wezterm.action_callback(create_workspace_selector),
   },
-  {
-    key = "u",
-    mods = "LEADER",
-    action = act.SwitchToWorkspace({
-      name = "monitoring",
-      cwd = "/Users/leegauthier/Projects/limbicmedia/aurora-web-ui",
-    }),
-  },
 }
 
 config.background = {
