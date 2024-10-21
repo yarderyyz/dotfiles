@@ -1,7 +1,9 @@
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
-
+local mux = wezterm.mux
 local act = wezterm.action
+
+config.default_prog = { "/bin/zsh", "-l" }
 
 config.color_scheme = "Catppuccin Mocha"
 config.font_size = 16
@@ -53,6 +55,121 @@ local function split_nav(resize_or_move, key)
 end
 -- End From smart-splits.nvim
 
+local function simple_default(window, cwd)
+  local nvim_pane = window:active_pane()
+  nvim_pane:split({ direction = "Bottom", size = 0.33 })
+  -- window:perform_action(wezterm.action.SplitVertical, nvim_pane)
+  os.execute("sleep " .. tonumber(0.5))
+  nvim_pane:send_text("nvim\n")
+end
+
+local workspaces = {
+  -- Workspace definition for "aurora-ui"
+  ["aurora-ui"] = {
+    cwd = "/Users/leegauthier/Projects/limbicmedia/aurora-web-ui/",
+    setup = function(window, cwd)
+      local nvim_pane = window:active_pane()
+
+      nvim_pane:split({ direction = "Bottom", size = 0.33 })
+
+      window:perform_action(
+        wezterm.action.SpawnCommandInNewTab({
+          cwd = cwd,
+        }),
+        nvim_pane
+      )
+      local server_pane = window:active_pane()
+
+      window:perform_action(wezterm.action.ActivateTab(0), nvim_pane)
+
+      -- Sleep to give OS time to load the shell before sending the commands
+      os.execute("sleep " .. tonumber(0.4))
+      nvim_pane:send_text("nvim\n")
+      server_pane:send_text("yarn start:maestro --open 0\n")
+    end,
+  },
+  ["termban"] = {
+    cwd = "/Users/leegauthier/Projects/games/termban",
+    setup = simple_default,
+  },
+  -- You can add more workspaces here
+  -- ["another-workspace"] = {
+  --   cwd = "~/path/to/another/project/",
+  --   setup = function(window, cwd)
+  --     -- Setup code for the other workspace
+  --   end,
+  -- },
+}
+
+local function create_workspace_selector(window, pane)
+  -- Build the list of workspaces to display
+  local items = {}
+  local keys = {}
+  for name, _ in pairs(workspaces) do
+    keys[name] = true
+    table.insert(items, {
+      label = name,
+      id = name,
+    })
+  end
+
+  for _, name in ipairs(wezterm.mux.get_workspace_names()) do
+    if keys[name] == nil then
+      table.insert(items, {
+        label = name,
+        id = name,
+      })
+    end
+  end
+
+  -- Show the selector
+  window:perform_action(
+    act.InputSelector({
+      title = "Select a workspace",
+      choices = items,
+      action = wezterm.action_callback(function(window, pane, id, label)
+        if not id then
+          return
+        end
+
+        local workspace = workspaces[id]
+        if not workspace then
+          window:perform_action(
+            wezterm.action.SwitchToWorkspace({
+              name = id,
+            }),
+            pane
+          )
+        else
+          -- Check if the workspace already exists
+          local existing_workspaces = wezterm.mux.get_workspace_names()
+          local workspace_exists = false
+          for _, w in ipairs(existing_workspaces) do
+            if w == id then
+              workspace_exists = true
+              break
+            end
+          end
+
+          -- Open workspace if it exists
+          window:perform_action(
+            wezterm.action.SwitchToWorkspace({
+              name = id,
+              spawn = { cwd = workspace.cwd },
+            }),
+            pane
+          )
+          -- Perform the custom setup for the new workspace
+          if not workspace_exists then
+            workspace.setup(window, workspace.cwd)
+          end
+        end
+      end),
+    }),
+    pane
+  )
+end
+
 config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 1000 }
 config.keys = {
   -- move between split panes
@@ -77,6 +194,19 @@ config.keys = {
     key = "z",
     mods = "LEADER",
     action = wezterm.action.TogglePaneZoomState,
+  },
+  {
+    key = "w",
+    mods = "LEADER",
+    action = wezterm.action_callback(create_workspace_selector),
+  },
+  {
+    key = "u",
+    mods = "LEADER",
+    action = act.SwitchToWorkspace({
+      name = "monitoring",
+      cwd = "/Users/leegauthier/Projects/limbicmedia/aurora-web-ui",
+    }),
   },
 }
 
@@ -112,14 +242,8 @@ config.inactive_pane_hsb = {
   brightness = 0.7,
 }
 
--- wezterm.on("gui-startup", function(cmd)
---   local tab, pane, window = mux.spawn_window(cmd or {})
---   -- Create a split occupying the right 1/3 of the screen
---   pane:split({ size = 1.3 })
---   -- Create another split in the right of the remaining 2/3
---   -- of the space; the resultant split is in the middle
---   -- 1/3 of the display and has the focus.
---   pane:split({ size = 0.5 })
--- end)
+wezterm.on("update-right-status", function(window, pane)
+  window:set_right_status(window:active_workspace())
+end)
 
 return config
