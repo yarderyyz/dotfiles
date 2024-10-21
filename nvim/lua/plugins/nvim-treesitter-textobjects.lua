@@ -1,6 +1,7 @@
 -- TODO: maybe put this in a utils file
 local textObj = {
   func = "f",
+  class = "c",
   call = "l",
   condition = "o",
 }
@@ -17,19 +18,29 @@ return {
     { "i/", "<cmd>TSTextobjectSelect @regex.inner<CR>", mode = { "x", "o" }, desc = " inner regex" },
     { "aa", "<cmd>TSTextobjectSelect @parameter.outer<CR>", mode = { "x", "o" }, desc = "󰏪 outer parameter" },
     { "ia", "<cmd>TSTextobjectSelect @parameter.inner<CR>", mode = { "x", "o" }, desc = "󰏪 inner parameter" },
-    { "iu", "<cmd>TSTextobjectSelect @loop.inner<CR>", mode = { "x", "o" }, desc = "󰛤 inner loop" },
-    { "au", "<cmd>TSTextobjectSelect @loop.outer<CR>", mode = { "x", "o" }, desc = "󰛤 outer loop" },
+    {
+      "i" .. textObj.class,
+      "<cmd>TSTextobjectSelect @class.inner<CR>",
+      mode = { "x", "o" },
+      desc = " inner class",
+    },
+    {
+      "a" .. textObj.class,
+      "<cmd>TSTextobjectSelect @class.outer<CR>",
+      mode = { "x", "o" },
+      desc = " outer class",
+    },
     {
       "a" .. textObj.func,
       "<cmd>TSTextobjectSelect @function.outer<CR>",
       mode = { "x", "o" },
-      desc = " outer function",
+      desc = "󰘧 outer function",
     },
     {
       "i" .. textObj.func,
       "<cmd>TSTextobjectSelect @function.inner<CR>",
       mode = { "x", "o" },
-      desc = " inner function",
+      desc = "󰘧 inner function",
     },
     {
       "a" .. textObj.condition,

@@ -15,6 +15,8 @@ vim.g.softtabstop = 2 -- Number of spaces that <Tab> inserts
 
 -- set true color
 vim.o.termguicolors = true
+vim.o.pumblend = 0
+vim.o.winblend = 0
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = "a"
@@ -134,7 +136,7 @@ vim.opt.rtp:prepend(lazypath)
 -- set custom filetypes here
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
   pattern = "*.scm",
-  command = "setfiletype scheme",
+  command = "setfiletype commonlisp",
 })
 
 require("lazy").setup({
@@ -153,6 +155,11 @@ require("lazy").setup({
     -- have outdated releases, which may break your Neovim install.
     version = false, -- always use the latest git commit
     -- version = "*", -- try installing the latest stable version for plugins that support semver
+  },
+  change_detection = {
+    -- automatically check for config file changes and reload the ui
+    enabled = true,
+    notify = true, -- get a notification when changes are found
   },
   install = { colorscheme = { "tokyonight", "habamax", "catppuccin" } },
   checker = { enabled = true }, -- automatically check for plugin updates

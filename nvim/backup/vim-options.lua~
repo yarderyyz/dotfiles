@@ -1,0 +1,108 @@
+-- Set leader key to space
+vim.g.mapleader = " "
+
+-- Enable line numbers
+vim.opt.number = true
+
+-- Relative line numbers
+vim.opt.relativenumber = true
+
+-- Enable mouse support
+vim.opt.mouse = "a"
+
+-- Enable syntax highlighting (note: Neovim does this automatically)
+vim.cmd("syntax on")
+
+-- Enable true color support
+vim.opt.termguicolors = true
+
+-- Set indentation
+vim.opt.tabstop = 4        -- Number of visual spaces per tab
+vim.opt.shiftwidth = 4     -- Number of spaces for autoindent
+vim.opt.expandtab = true   -- Use spaces instead of tabs
+vim.opt.smartindent = true -- Smart indentation based on file type
+
+-- Enable line wrapping
+vim.opt.wrap = true
+
+-- Highlight search results
+vim.opt.hlsearch = true
+
+-- Enable incremental search
+vim.opt.incsearch = true
+
+-- Ignore case when searching, unless capital letters are used
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+
+-- Enable persistent undo
+vim.opt.undofile = true
+vim.opt.undodir = vim.fn.expand("~/.config/nvim/undo")
+
+-- Enable backup and swap files (set directories)
+vim.opt.backup = true
+vim.opt.backupdir = vim.fn.expand("~/.config/nvim/backup")
+vim.opt.swapfile = true
+vim.opt.directory = vim.fn.expand("~/.config/nvim/swap")
+
+-- System clipboard support
+vim.opt.clipboard = "unnamedplus"
+
+-- Faster scrolling
+vim.opt.ttyfast = true
+
+-- Reduce delay for escape sequence recognition
+vim.opt.timeoutlen = 500
+
+-- Disable error bells
+vim.opt.errorbells = false
+vim.opt.visualbell = true
+
+-- Command height for better message display
+vim.opt.cmdheight = 2
+
+-- Always show the sign column (for diagnostics, etc.)
+vim.opt.signcolumn = "yes"
+
+-- Show matching parentheses and brackets
+vim.opt.showmatch = true
+
+-- Show the current line and column in the status line
+vim.opt.ruler = true
+
+-- Split windows to the right and below
+vim.opt.splitright = true
+vim.opt.splitbelow = true
+
+-- Display incomplete commands in the status line
+vim.opt.showcmd = true
+
+-- Save view (folds, cursor position, etc.) between sessions
+vim.opt.viewoptions = "cursor,folds,slash,unix"
+
+-- Set up folding based on syntax and keep all folds open by default
+vim.opt.foldmethod = "syntax"
+vim.opt.foldlevel = 99
+
+-- Set scroll offset to keep lines visible above/below the cursor
+vim.opt.scrolloff = 8
+vim.opt.sidescrolloff = 8
+
+-- Increase history size
+vim.opt.history = 1000
+
+-- Enable 24-bit color and set GUI font (adjust the font name)
+vim.opt.guifont = "JetBrainsMono Nerd Font:h14"
+
+-- Display tabline to show buffer tabs
+vim.opt.showtabline = 2
+
+-- Custom statusline (example)
+vim.opt.statusline = "%F%m%r%h%w [%{&ff}/%Y] [%l,%v][%p%%] %L"
+
+-- Wildmenu and wildmode for enhanced command-line autocompletion
+vim.opt.wildmenu = true
+vim.opt.wildmode = { "longest:full", "full" }
+
+-- Auto-read files when they change from outside
+vim.opt.autoread = true
