@@ -55,6 +55,23 @@ local function split_nav(resize_or_move, key)
 end
 -- End From smart-splits.nvim
 
+local function forward_if_vim(key, mods, action)
+  return {
+    key = key,
+    mods = mods,
+    action = wezterm.action_callback(function(win, pane)
+      if is_vim(pane) then
+        -- pass the keys through to vim/nvim
+        win:perform_action({
+          SendKey = { key = key, mods = mods },
+        }, pane)
+      else
+        win:perform_action(action, pane)
+      end
+    end),
+  }
+end
+
 local function simple_default(window, cwd)
   local nvim_pane = window:active_pane()
   nvim_pane:split({ direction = "Bottom", size = 0.33 })
@@ -92,9 +109,13 @@ local workspaces = {
     cwd = "/Users/leegauthier/Projects/games/termban",
     setup = simple_default,
   },
+  ["docuforce"] = {
+    cwd = "/Users/leegauthier/Projects/docuforce",
+    setup = simple_default,
+  },
   -- You can add more workspaces here
   -- ["another-workspace"] = {
-  --   cwd = "~/path/to/another/project/",
+  --   cwd = "/Users/leegauthier/Projects/",
   --   setup = function(window, cwd)
   --     -- Setup code for the other workspace
   --   end,
@@ -182,6 +203,10 @@ config.keys = {
   split_nav("resize", "j"),
   split_nav("resize", "k"),
   split_nav("resize", "l"),
+  -- scroll in panes
+  forward_if_vim("u", "CTRL", act.ScrollByPage(-0.5)),
+  forward_if_vim("d", "CTRL", act.ScrollByPage(0.5)),
+  -- tmux-like workspace and mux'd window management
   { key = "t", mods = "CTRL|CMD", action = act.SpawnTab("CurrentPaneDomain") },
   { key = '"', mods = "LEADER", action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
   { key = "'", mods = "LEADER", action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }) },
