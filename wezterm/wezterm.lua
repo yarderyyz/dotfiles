@@ -3,7 +3,7 @@ local config = wezterm.config_builder()
 local mux = wezterm.mux
 local act = wezterm.action
 
-config.default_prog = { "/bin/zsh", "-l" }
+config.default_prog = { "/opt/homebrew/bin/fish" }
 
 config.color_scheme = "Catppuccin Mocha"
 config.font_size = 16
@@ -19,6 +19,16 @@ config.window_padding = {
   top = 10,
   bottom = 0,
 }
+
+-- Equivalent to POSIX basename(3)
+-- Given "/foo/bar" returns "bar"
+-- Given "c:\\foo\\bar" returns "bar"
+local function basename(s)
+  if not s then
+    return nil
+  end
+  return string.gsub(s, "(.*[/\\])(.*)", "%2")
+end
 
 -- Start From smart-splits.nvim
 local function is_vim(pane)
@@ -55,12 +65,16 @@ local function split_nav(resize_or_move, key)
 end
 -- End From smart-splits.nvim
 
-local function forward_if_vim(key, mods, action)
+local function forward_if_not_shell(key, mods, action)
   return {
     key = key,
     mods = mods,
     action = wezterm.action_callback(function(win, pane)
-      if is_vim(pane) then
+      local process_name = basename(pane:get_foreground_process_name())
+      local shells = { fish = true, zsh = true, bash = true, nu = true }
+      wezterm.log_warn(process_name)
+      wezterm.log_warn(shells[process_name])
+      if not shells[process_name] then
         -- pass the keys through to vim/nvim
         win:perform_action({
           SendKey = { key = key, mods = mods },
@@ -204,8 +218,8 @@ config.keys = {
   split_nav("resize", "k"),
   split_nav("resize", "l"),
   -- scroll in panes
-  forward_if_vim("u", "CTRL", act.ScrollByPage(-0.5)),
-  forward_if_vim("d", "CTRL", act.ScrollByPage(0.5)),
+  forward_if_not_shell("u", "CTRL", act.ScrollByPage(-0.5)),
+  forward_if_not_shell("d", "CTRL", act.ScrollByPage(0.5)),
   -- tmux-like workspace and mux'd window management
   { key = "t", mods = "CTRL|CMD", action = act.SpawnTab("CurrentPaneDomain") },
   { key = '"', mods = "LEADER", action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
@@ -230,8 +244,9 @@ config.keys = {
 config.background = {
   {
     -- source = { File = "/Users/leegauthier/.config/wezterm/Revelstoke-British-Columbia.jpg" },
-    source = { File = "/Users/leegauthier/.config/wezterm/taiwan.jpg" },
+    source = { File = "/Users/leegauthier/.config/wezterm/images/Big Sur Shore Rocks.png" },
     horizontal_align = "Center",
+    height = "Contain",
   },
   {
     source = {
@@ -255,8 +270,8 @@ config.background = {
 }
 
 config.inactive_pane_hsb = {
-  saturation = 0.9,
-  brightness = 0.7,
+  saturation = 0.7,
+  brightness = 0.5,
 }
 
 wezterm.on("update-right-status", function(window, pane)
