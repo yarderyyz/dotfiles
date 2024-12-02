@@ -1,7 +1,9 @@
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
-
+local mux = wezterm.mux
 local act = wezterm.action
+
+config.default_prog = { "/opt/homebrew/bin/fish" }
 
 config.color_scheme = "Catppuccin Mocha"
 config.font_size = 16
@@ -17,6 +19,16 @@ config.window_padding = {
   top = 10,
   bottom = 0,
 }
+
+-- Equivalent to POSIX basename(3)
+-- Given "/foo/bar" returns "bar"
+-- Given "c:\\foo\\bar" returns "bar"
+local function basename(s)
+  if not s then
+    return nil
+  end
+  return string.gsub(s, "(.*[/\\])(.*)", "%2")
+end
 
 -- Start From smart-splits.nvim
 local function is_vim(pane)
@@ -53,6 +65,146 @@ local function split_nav(resize_or_move, key)
 end
 -- End From smart-splits.nvim
 
+local function forward_if_not_shell(key, mods, action)
+  return {
+    key = key,
+    mods = mods,
+    action = wezterm.action_callback(function(win, pane)
+      local process_name = basename(pane:get_foreground_process_name())
+      local shells = { fish = true, zsh = true, bash = true, nu = true }
+      wezterm.log_warn(process_name)
+      wezterm.log_warn(shells[process_name])
+      if not shells[process_name] then
+        -- pass the keys through to vim/nvim
+        win:perform_action({
+          SendKey = { key = key, mods = mods },
+        }, pane)
+      else
+        win:perform_action(action, pane)
+      end
+    end),
+  }
+end
+
+local function simple_default(window, cwd)
+  local nvim_pane = window:active_pane()
+  nvim_pane:split({ direction = "Bottom", size = 0.33 })
+  -- window:perform_action(wezterm.action.SplitVertical, nvim_pane)
+  os.execute("sleep " .. tonumber(0.5))
+  nvim_pane:send_text("nvim\n")
+end
+
+local workspaces = {
+  -- Workspace definition for "aurora-ui"
+  ["aurora-ui"] = {
+    cwd = "/Users/leegauthier/Projects/limbicmedia/aurora-web-ui/",
+    setup = function(window, cwd)
+      local nvim_pane = window:active_pane()
+
+      nvim_pane:split({ direction = "Bottom", size = 0.33 })
+
+      window:perform_action(
+        wezterm.action.SpawnCommandInNewTab({
+          cwd = cwd,
+        }),
+        nvim_pane
+      )
+      local server_pane = window:active_pane()
+
+      window:perform_action(wezterm.action.ActivateTab(0), nvim_pane)
+
+      -- Sleep to give OS time to load the shell before sending the commands
+      os.execute("sleep " .. tonumber(0.4))
+      nvim_pane:send_text("nvim\n")
+      server_pane:send_text("yarn start:maestro --open 0\n")
+    end,
+  },
+  ["termban"] = {
+    cwd = "/Users/leegauthier/Projects/games/termban",
+    setup = simple_default,
+  },
+  ["docuforce"] = {
+    cwd = "/Users/leegauthier/Projects/docuforce",
+    setup = simple_default,
+  },
+  -- You can add more workspaces here
+  -- ["another-workspace"] = {
+  --   cwd = "/Users/leegauthier/Projects/",
+  --   setup = function(window, cwd)
+  --     -- Setup code for the other workspace
+  --   end,
+  -- },
+}
+
+local function create_workspace_selector(window, pane)
+  -- Build the list of workspaces to display
+  local items = {}
+  local keys = {}
+  for name, _ in pairs(workspaces) do
+    keys[name] = true
+    table.insert(items, {
+      label = name,
+      id = name,
+    })
+  end
+
+  for _, name in ipairs(wezterm.mux.get_workspace_names()) do
+    if keys[name] == nil then
+      table.insert(items, {
+        label = name,
+        id = name,
+      })
+    end
+  end
+
+  -- Show the selector
+  window:perform_action(
+    act.InputSelector({
+      title = "Select a workspace",
+      choices = items,
+      action = wezterm.action_callback(function(window, pane, id, label)
+        if not id then
+          return
+        end
+
+        local workspace = workspaces[id]
+        if not workspace then
+          window:perform_action(
+            wezterm.action.SwitchToWorkspace({
+              name = id,
+            }),
+            pane
+          )
+        else
+          -- Check if the workspace already exists
+          local existing_workspaces = wezterm.mux.get_workspace_names()
+          local workspace_exists = false
+          for _, w in ipairs(existing_workspaces) do
+            if w == id then
+              workspace_exists = true
+              break
+            end
+          end
+
+          -- Open workspace if it exists
+          window:perform_action(
+            wezterm.action.SwitchToWorkspace({
+              name = id,
+              spawn = { cwd = workspace.cwd },
+            }),
+            pane
+          )
+          -- Perform the custom setup for the new workspace
+          if not workspace_exists then
+            workspace.setup(window, workspace.cwd)
+          end
+        end
+      end),
+    }),
+    pane
+  )
+end
+
 config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 1000 }
 config.keys = {
   -- move between split panes
@@ -65,6 +217,10 @@ config.keys = {
   split_nav("resize", "j"),
   split_nav("resize", "k"),
   split_nav("resize", "l"),
+  -- scroll in panes
+  forward_if_not_shell("u", "CTRL", act.ScrollByPage(-0.5)),
+  forward_if_not_shell("d", "CTRL", act.ScrollByPage(0.5)),
+  -- tmux-like workspace and mux'd window management
   { key = "t", mods = "CTRL|CMD", action = act.SpawnTab("CurrentPaneDomain") },
   { key = '"', mods = "LEADER", action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
   { key = "'", mods = "LEADER", action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }) },
@@ -78,13 +234,19 @@ config.keys = {
     mods = "LEADER",
     action = wezterm.action.TogglePaneZoomState,
   },
+  {
+    key = "w",
+    mods = "LEADER",
+    action = wezterm.action_callback(create_workspace_selector),
+  },
 }
 
 config.background = {
   {
     -- source = { File = "/Users/leegauthier/.config/wezterm/Revelstoke-British-Columbia.jpg" },
-    source = { File = "/Users/leegauthier/.config/wezterm/taiwan.jpg" },
+    source = { File = "/Users/leegauthier/.config/wezterm/images/Big Sur Shore Rocks.png" },
     horizontal_align = "Center",
+    height = "Contain",
   },
   {
     source = {
@@ -108,18 +270,12 @@ config.background = {
 }
 
 config.inactive_pane_hsb = {
-  saturation = 0.9,
-  brightness = 0.7,
+  saturation = 0.7,
+  brightness = 0.5,
 }
 
--- wezterm.on("gui-startup", function(cmd)
---   local tab, pane, window = mux.spawn_window(cmd or {})
---   -- Create a split occupying the right 1/3 of the screen
---   pane:split({ size = 1.3 })
---   -- Create another split in the right of the remaining 2/3
---   -- of the space; the resultant split is in the middle
---   -- 1/3 of the display and has the focus.
---   pane:split({ size = 0.5 })
--- end)
+wezterm.on("update-right-status", function(window, pane)
+  window:set_right_status(window:active_workspace())
+end)
 
 return config
